@@ -61,7 +61,13 @@ export function HistoryDisplay({ history, setActiveTab }: HistoryDisplayProps) {
     }
   }
 
-  const getPlatformLabel = (platform: string) => {
+  const getPlatformLabel = (params: any) => {
+    // If it was a custom platform, use the custom platform value
+    if (params.platform === "custom" && params.customPlatform) {
+      return params.customPlatform
+    }
+
+    // Otherwise use the platform mapping
     const platformMap: Record<string, string> = {
       twitter: "Twitter/X",
       instagram: "Instagram",
@@ -74,9 +80,22 @@ export function HistoryDisplay({ history, setActiveTab }: HistoryDisplayProps) {
       blog: "Blog",
       dating: "Dating",
       gaming: "Gaming",
+      facebook: "Facebook",
+      tiktok: "TikTok",
+      snapchat: "Snapchat",
+      pinterest: "Pinterest",
+      steam: "Steam",
+      xbox: "Xbox",
+      playstation: "PlayStation",
+      nintendo: "Nintendo",
+      epicgames: "Epic Games",
+      roblox: "Roblox",
+      minecraft: "Minecraft",
+      threads: "Threads",
+      mastodon: "Mastodon",
     }
 
-    return platformMap[platform] || platform
+    return platformMap[params.platform] || params.platform
   }
 
   if (history.length === 0) {
@@ -131,7 +150,7 @@ export function HistoryDisplay({ history, setActiveTab }: HistoryDisplayProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base">
-                      {getTypeLabel(item.params.type)} for {getPlatformLabel(item.params.platform)}
+                      {getTypeLabel(item.params.type)} for {getPlatformLabel(item.params)}
                     </CardTitle>
                     <CardDescription>{formatDate(item.timestamp)}</CardDescription>
                   </div>
