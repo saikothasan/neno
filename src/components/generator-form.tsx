@@ -9,7 +9,15 @@ import { Loader2, Info, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -17,6 +25,14 @@ import { ResultsDisplay } from "@/components/results-display"
 import { HistoryDisplay } from "@/components/history-display"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/hooks/use-toast"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const formSchema = z.object({
   type: z.enum(["username", "name", "both"], {
@@ -26,6 +42,7 @@ const formSchema = z.object({
   platform: z.string().min(1, {
     message: "Please select a platform",
   }),
+  customPlatform: z.string().optional(),
   theme: z.string().optional(),
   purpose: z.string().optional(),
 })
@@ -38,21 +55,78 @@ interface ErrorResponse {
   message?: string
 }
 
+// Expanded platforms list organized by categories
 const platforms = [
-  { value: "twitter", label: "Twitter/X" },
-  { value: "instagram", label: "Instagram" },
-  { value: "tiktok", label: "TikTok" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "twitch", label: "Twitch" },
-  { value: "youtube", label: "YouTube" },
-  { value: "github", label: "GitHub" },
-  { value: "reddit", label: "Reddit" },
-  { value: "discord", label: "Discord" },
-  { value: "blog", label: "Blog" },
-  { value: "dating", label: "Dating Site" },
-  { value: "gaming", label: "Gaming" },
-  { value: "other", label: "Other" },
+  // Social Media
+  { value: "twitter", label: "Twitter/X", category: "Social Media" },
+  { value: "instagram", label: "Instagram", category: "Social Media" },
+  { value: "facebook", label: "Facebook", category: "Social Media" },
+  { value: "tiktok", label: "TikTok", category: "Social Media" },
+  { value: "snapchat", label: "Snapchat", category: "Social Media" },
+  { value: "pinterest", label: "Pinterest", category: "Social Media" },
+  { value: "linkedin", label: "LinkedIn", category: "Social Media" },
+  { value: "threads", label: "Threads", category: "Social Media" },
+  { value: "mastodon", label: "Mastodon", category: "Social Media" },
+
+  // Gaming
+  { value: "twitch", label: "Twitch", category: "Gaming" },
+  { value: "steam", label: "Steam", category: "Gaming" },
+  { value: "xbox", label: "Xbox", category: "Gaming" },
+  { value: "playstation", label: "PlayStation", category: "Gaming" },
+  { value: "nintendo", label: "Nintendo", category: "Gaming" },
+  { value: "discord", label: "Discord", category: "Gaming" },
+  { value: "epicgames", label: "Epic Games", category: "Gaming" },
+  { value: "roblox", label: "Roblox", category: "Gaming" },
+  { value: "minecraft", label: "Minecraft", category: "Gaming" },
+
+  // Professional
+  { value: "github", label: "GitHub", category: "Professional" },
+  { value: "gitlab", label: "GitLab", category: "Professional" },
+  { value: "stackoverflow", label: "Stack Overflow", category: "Professional" },
+  { value: "medium", label: "Medium", category: "Professional" },
+  { value: "dev", label: "Dev.to", category: "Professional" },
+  { value: "behance", label: "Behance", category: "Professional" },
+  { value: "dribbble", label: "Dribbble", category: "Professional" },
+
+  // Content & Entertainment
+  { value: "youtube", label: "YouTube", category: "Content & Entertainment" },
+  { value: "vimeo", label: "Vimeo", category: "Content & Entertainment" },
+  { value: "spotify", label: "Spotify", category: "Content & Entertainment" },
+  { value: "soundcloud", label: "SoundCloud", category: "Content & Entertainment" },
+  { value: "podcast", label: "Podcast", category: "Content & Entertainment" },
+  { value: "substack", label: "Substack", category: "Content & Entertainment" },
+
+  // Community & Forums
+  { value: "reddit", label: "Reddit", category: "Community & Forums" },
+  { value: "quora", label: "Quora", category: "Community & Forums" },
+  { value: "forum", label: "Forums", category: "Community & Forums" },
+
+  // Other
+  { value: "blog", label: "Blog", category: "Other" },
+  { value: "dating", label: "Dating Site", category: "Other" },
+  { value: "email", label: "Email", category: "Other" },
+  { value: "custom", label: "Custom Platform...", category: "Other" },
 ]
+
+// Group platforms by category
+const platformCategories = platforms.reduce(
+  (acc, platform) => {
+    if (!acc[platform.category]) {
+      acc[platform.category] = []
+    }
+    acc[platform.category].push(platform)
+    return acc
+  },
+  {} as Record<string, typeof platforms>,
+)
+
+// Get category names in order
+const categoryNames = Object.keys(platformCategories).sort((a, b) => {
+  // Ensure "Other" is always last
+  if (a === "Other") return 1
+  if (b === "Other") return -1
+  return a.localeCompare(b)
+})
 
 const themes = [
   { value: "tech", label: "Technology" },
@@ -67,6 +141,11 @@ const themes = [
   { value: "sports", label: "Sports" },
   { value: "music", label: "Music" },
   { value: "art", label: "Art" },
+  { value: "minimalist", label: "Minimalist" },
+  { value: "retro", label: "Retro" },
+  { value: "futuristic", label: "Futuristic" },
+  { value: "fantasy", label: "Fantasy" },
+  { value: "sci-fi", label: "Sci-Fi" },
 ]
 
 const purposes = [
@@ -78,6 +157,11 @@ const purposes = [
   { value: "gaming", label: "Gaming" },
   { value: "streaming", label: "Streaming" },
   { value: "professional_networking", label: "Professional Networking" },
+  { value: "content_creation", label: "Content Creation" },
+  { value: "community_building", label: "Community Building" },
+  { value: "education", label: "Education" },
+  { value: "activism", label: "Activism" },
+  { value: "fan_account", label: "Fan Account" },
 ]
 
 export function GeneratorForm() {
@@ -86,6 +170,8 @@ export function GeneratorForm() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>("generator")
   const [history, setHistory] = useState<any[]>([])
+  const [customPlatformDialogOpen, setCustomPlatformDialogOpen] = useState(false)
+  const [customPlatformValue, setCustomPlatformValue] = useState("")
 
   // Load history from localStorage on component mount
   useEffect(() => {
@@ -131,20 +217,54 @@ export function GeneratorForm() {
       type: "username",
       count: 3,
       platform: "twitter",
+      customPlatform: "",
+      theme: "",
+      purpose: "",
     },
   })
+
+  // Watch the platform value to handle custom platform selection
+  const selectedPlatform = form.watch("platform")
+
+  useEffect(() => {
+    if (selectedPlatform === "custom") {
+      setCustomPlatformDialogOpen(true)
+    }
+  }, [selectedPlatform])
+
+  // Handle custom platform submission
+  const handleCustomPlatformSubmit = () => {
+    if (customPlatformValue.trim()) {
+      form.setValue("customPlatform", customPlatformValue.trim())
+      setCustomPlatformDialogOpen(false)
+    } else {
+      toast({
+        title: "Error",
+        description: "Please enter a platform name",
+        variant: "destructive",
+      })
+    }
+  }
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true)
     setError(null)
 
     try {
+      // Prepare the data for the API
+      const apiValues = { ...values }
+
+      // If custom platform is selected, use the custom platform value
+      if (values.platform === "custom" && values.customPlatform) {
+        apiValues.platform = values.customPlatform
+      }
+
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(apiValues),
       })
 
       if (!response.ok) {
@@ -226,17 +346,26 @@ export function GeneratorForm() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Platform</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select platform" />
+                                <SelectValue placeholder="Select platform">
+                                  {field.value === "custom" && form.getValues().customPlatform
+                                    ? form.getValues().customPlatform
+                                    : platforms.find((p) => p.value === field.value)?.label || "Select platform"}
+                                </SelectValue>
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
-                              {platforms.map((platform) => (
-                                <SelectItem key={platform.value} value={platform.value}>
-                                  {platform.label}
-                                </SelectItem>
+                            <SelectContent className="max-h-[300px]">
+                              {categoryNames.map((category) => (
+                                <SelectGroup key={category}>
+                                  <SelectLabel>{category}</SelectLabel>
+                                  {platformCategories[category].map((platform) => (
+                                    <SelectItem key={platform.value} value={platform.value}>
+                                      {platform.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
                               ))}
                             </SelectContent>
                           </Select>
@@ -292,13 +421,14 @@ export function GeneratorForm() {
                               </Tooltip>
                             </TooltipProvider>
                           </FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select theme (optional)" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="max-h-[300px]">
+                              <SelectItem value="no_theme">No theme</SelectItem>
                               {themes.map((theme) => (
                                 <SelectItem key={theme.value} value={theme.value}>
                                   {theme.label}
@@ -329,13 +459,14 @@ export function GeneratorForm() {
                               </Tooltip>
                             </TooltipProvider>
                           </FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select purpose (optional)" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="max-h-[300px]">
+                              <SelectItem value="no_purpose">No specific purpose</SelectItem>
                               {purposes.map((purpose) => (
                                 <SelectItem key={purpose.value} value={purpose.value}>
                                   {purpose.label}
@@ -427,6 +558,45 @@ export function GeneratorForm() {
           <HistoryDisplay history={history} setActiveTab={setActiveTab} />
         </TabsContent>
       </Tabs>
+
+      {/* Custom Platform Dialog */}
+      <Dialog
+        open={customPlatformDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !form.getValues().customPlatform) {
+            // If dialog is closed without setting a custom platform, reset to default
+            form.setValue("platform", "twitter")
+          }
+          setCustomPlatformDialogOpen(open)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Custom Platform</DialogTitle>
+            <DialogDescription>Provide the name of the platform you want to generate names for</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="e.g., Clubhouse, Bluesky, Patreon..."
+              value={customPlatformValue}
+              onChange={(e) => setCustomPlatformValue(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                form.setValue("platform", "twitter")
+                setCustomPlatformDialogOpen(false)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCustomPlatformSubmit}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }
