@@ -8,6 +8,7 @@ interface GenerateRequest {
   type: "username" | "name" | "both"
   count: number
   platform: string
+  customPlatform?: string
   theme?: string
   purpose?: string
 }
@@ -28,7 +29,10 @@ export async function POST(request: NextRequest) {
     // Add required parameters
     url.searchParams.append("type", values.type)
     url.searchParams.append("count", values.count.toString())
-    url.searchParams.append("platform", values.platform)
+
+    // Use custom platform if provided, otherwise use the selected platform
+    const platformToUse = values.platform
+    url.searchParams.append("platform", platformToUse)
 
     // Add optional parameters if they exist
     if (values.theme) {
