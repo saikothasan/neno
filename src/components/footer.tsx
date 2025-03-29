@@ -17,15 +17,30 @@ export function Footer() {
               AI-powered username and name generation for all your social media, gaming, and professional needs.
             </p>
             <div className="mt-6 flex space-x-4">
-              <Link href="#" className="text-muted-foreground hover:text-foreground">
+              <Link
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <span className="sr-only">Twitter</span>
                 <Twitter className="h-5 w-5" />
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground">
+              <Link
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <span className="sr-only">Instagram</span>
                 <Instagram className="h-5 w-5" />
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground">
+              <Link
+                href="https://github.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <span className="sr-only">GitHub</span>
                 <Github className="h-5 w-5" />
               </Link>
@@ -76,7 +91,7 @@ export function Footer() {
         </div>
         <div className="mt-12 border-t pt-8">
           <p className="text-center text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} NameCraft AI. All rights reserved.
+            &copy; {new Date().getFullYear()} NameCraft. All rights reserved.
           </p>
         </div>
       </div>
