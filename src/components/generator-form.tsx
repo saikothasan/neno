@@ -13,10 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { generateNames } from "@/lib/actions"
 import { ResultsDisplay } from "@/components/results-display"
 import { HistoryDisplay } from "@/components/history-display"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "@/hooks/use-toast"
 
 const formSchema = z.object({
   type: z.enum(["username", "name", "both"], {
@@ -133,11 +133,29 @@ export function GeneratorForm() {
     setError(null)
 
     try {
-      const data = await generateNames(values)
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to generate names")
+      }
+
+      const data = await response.json()
       setResults(data)
       saveToHistory(data, values)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate names")
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to generate names",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
