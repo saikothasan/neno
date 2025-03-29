@@ -3,10 +3,24 @@ import { type NextRequest, NextResponse } from "next/server"
 // Use the Edge Runtime for better performance
 export const runtime = "edge"
 
+// Define the expected request body type
+interface GenerateRequest {
+  type: "username" | "name" | "both"
+  count: number
+  platform: string
+  theme?: string
+  purpose?: string
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Parse the request body
-    const values = await request.json()
+    // Parse the request body with type assertion
+    const values = (await request.json()) as GenerateRequest
+
+    // Validate required fields
+    if (!values.type || !values.platform || typeof values.count !== "number") {
+      return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
+    }
 
     // Build the API URL with query parameters
     const url = new URL("https://userapi.oax.workers.dev/")
