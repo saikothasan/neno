@@ -32,6 +32,12 @@ const formSchema = z.object({
 
 export type FormValues = z.infer<typeof formSchema>
 
+// Define the error response type
+interface ErrorResponse {
+  error?: string
+  message?: string
+}
+
 const platforms = [
   { value: "twitter", label: "Twitter/X" },
   { value: "instagram", label: "Instagram" },
@@ -142,18 +148,20 @@ export function GeneratorForm() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to generate names")
+        const errorData = (await response.json()) as ErrorResponse
+        const errorMessage = errorData.error || errorData.message || "Failed to generate names"
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
       setResults(data)
       saveToHistory(data, values)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate names")
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate names"
+      setError(errorMessage)
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Failed to generate names",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
