@@ -5,10 +5,10 @@ import Link from "next/link"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { useMobile } from "@/hooks/use-mobile"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function Header() {
-  const isMobile = useMobile()
+  const isMobile = useIsMobile()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   // Close menu when switching from mobile to desktop
